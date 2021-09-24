@@ -1,0 +1,9 @@
+extras.txt
+RayCer.exe
+RayCer.sln
+RayCer.vcxproj
+RayCer.vcxproj.filters
+RayCer.vcxproj.user
+test.ppm
+.vs/*
+x64/*
