@@ -4,6 +4,19 @@
 #include <fstream>
 #include <initializer_list>
 
+
+template<typename Targ1, typename... Targs>
+struct are_arithmetic
+{
+	static const bool value = std::is_arithmetic<Targ1>::value || are_arithmetic<Targs...>::value;
+};
+
+template<typename Targ1_>
+struct are_arithmetic<Targ1_>
+{
+	static const bool value = std::is_arithmetic<Targ1_>::value;
+};
+
 template<typename numeric_type, unsigned char num_elements>
 class __GeneralVector__
 {
@@ -14,19 +27,29 @@ protected:
 public:
 	__GeneralVector__() = default;
 
-	__GeneralVector__(numeric_type val)
+	template<unsigned char index, typename T,typename... Ts>
+	void _init_set_(T arg,Ts... args)
 	{
-		for (unsigned char i = 0; i < num_elements; ++i)
+		data[index] = arg;
+		_init_set_<index + 1>(args...);
+	}
+
+	template<unsigned char index, typename T>
+	void _init_set_(T arg)
+	{
+		data[index] = arg;
+		for (unsigned char i = index + 1; i < num_elements; ++i)
 		{
-			data[i] = val;
+			data[i] = data[0];
 		}
 	}
-	__GeneralVector__(const numeric_type(&init)[num_elements])
+
+	template<typename T, typename... Ts>
+	__GeneralVector__(T arg, Ts... args)
 	{
-		for (unsigned char i = 0; i < num_elements; ++i)
-		{
-			data[i] = num_elements;
-		}
+		static_assert(are_arithmetic<numeric_type, T, Ts...>::value);
+		//static_assert(sizeof...(Ts) == num_elements - 1);
+		_init_set_<0>(arg, args...);
 	}
 
 	inline __GeneralVector__<numeric_type, num_elements> operator+(
@@ -61,23 +84,49 @@ public:
 
 	inline numeric_type operator *(__GeneralVector__<numeric_type, num_elements> const& v)
 	{
-		numeric_type dot_product;
+		numeric_type dot_product = 0;
 		for (unsigned char i = 0; i < num_elements; ++i)
 			dot_product += data[i] * v.data[i];
 		return dot_product;
 	}
 
-	inline __GeneralVector__<numeric_type,num_elements> operator*(numeric_type t)
+	inline __GeneralVector__<numeric_type,3> operator*(numeric_type t)
 	{
-		__GeneralVector__<numeric_type, num_elements> v_new;
+		__GeneralVector__<numeric_type, 3> prod = 0;
 		for (unsigned char i = 0; i < num_elements; ++i)
-			v_new.data[i] = data[i] * t;
-		return v_new;
+			prod.data[i] = data[i] * t;
+		return prod;
 	}
 
 	inline numeric_type operator/(numeric_type t)
 	{
 		return (1 / t) * this;
+	}
+
+
+	static double fast_inv_sqrt(double n) {
+
+		const double threehalfs = 1.5F;
+		double y = n;
+
+		long long i = *(long long*)&y;
+
+		i = 0x5fe6eb50c7b537a9 - (i >> 1);
+		y = *(double*)&i;
+
+		y = y * (threehalfs - ((n * 0.5F) * y * y));
+
+		return y;
+	}
+
+	__GeneralVector__<numeric_type, num_elements> normalized()
+	{
+		double inv_sqrt = __GeneralVector__::fast_inv_sqrt(magnitude2());
+		//todo not great way to initalize r_vec
+		__GeneralVector__<numeric_type, num_elements> r_vec;
+		for (unsigned char i = 0; i < num_elements;++i)
+			r_vec.data[i] = data[i] * inv_sqrt;
+		return r_vec;
 	}
 
 	static inline numeric_type dot(const __GeneralVector__<numeric_type, num_elements>& u, const __GeneralVector__<numeric_type, num_elements>& v)
@@ -88,10 +137,19 @@ public:
 		return dot_product;
 	}
 
+	__GeneralVector__<numeric_type,3> cross(__GeneralVector__<numeric_type, 3> other)
+	{
+		static_assert(num_elements >= 3);
+		return __GeneralVector__<numeric_type, 3>({
+		(this->y() * other.z() - this->z() * other.y()),
+		-(this->x() * other.z() - this->z() * other.x()),
+		(this->x() * other.y() - this->y() * other.x())
+			});
+	}
 
 	numeric_type magnitude2()
 	{
-		numeric_type mag;
+		numeric_type mag = 0;
 		for (unsigned char i = 0; i < num_elements; ++i)
 			mag += data[i] * data[i];
 		return mag;
@@ -100,6 +158,18 @@ public:
 	numeric_type magnitude()
 	{
 		return std::sqrt(magnitude2());
+	}
+
+	numeric_type& operator[](unsigned char index)
+	{
+		assert(num_elements > index);
+		return data[index];
+	}
+
+	numeric_type& operator[](unsigned char index) const
+	{
+		assert(num_elements > index);
+		return data[index];
 	}
 
 	numeric_type& x()
@@ -147,25 +217,33 @@ public:
 };
 
 
-
-
-template <typename T>
-class __Vector3__ : public __GeneralVector__<T, 3>
-{
-public:
-	using __GeneralVector__<T, 3>::__GeneralVector__;
-	__Vector3__<T> cross(__Vector3__<T> other)
-	{
-		__Vector3__<T> new_vec;
-		new_vec.x() = (this->y() * other.z() - this->z() * other.y());
-		new_vec.y() = -(this->x() * other.z() - this->z() * other.x());
-		new_vec.z() = (this->x() * other.y() - this->y() * other.x());
-		return new_vec;
-	}
-};
+//template <typename T>
+//class __Vector3__ : public __GeneralVector__<T, 3>
+//{
+//public:
+//	using __GeneralVector__<T, 3>::__GeneralVector__;
+//	using __GeneralVector__<T, 3>::operator+;
+//	__Vector3__<T> cross(__Vector3__<T> other)
+//	{
+//		__Vector3__<T> new_vec;
+//		new_vec.x() = (this->y() * other.z() - this->z() * other.y());
+//		new_vec.y() = -(this->x() * other.z() - this->z() * other.x());
+//		new_vec.z() = (this->x() * other.y() - this->y() * other.x());
+//		return new_vec;
+//	}
+//};
 
 typedef float default_vector_type;
-
 typedef __GeneralVector__<default_vector_type, 2> vec2;
-typedef __Vector3__<default_vector_type> vec3;
+typedef __GeneralVector__<default_vector_type,3> vec3;
 typedef __GeneralVector__<default_vector_type, 4> vec4;
+
+typedef __GeneralVector__<int, 2> ivec2;
+typedef __GeneralVector__<int,3> ivec3;
+typedef __GeneralVector__<int, 4> ivec4;
+
+typedef __GeneralVector__<unsigned int, 2> uivec2;
+typedef __GeneralVector__<unsigned int,3> uivec3;
+typedef __GeneralVector__<unsigned int, 4> uivec4;
+
+typedef __GeneralVector__<default_vector_type,3> Point3;

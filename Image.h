@@ -6,6 +6,8 @@
 #include <fstream>
 #include <functional>
 #include <algorithm>
+#include <thread>
+
 #include <assert.h>
 
 #include "Vec.h"
@@ -24,6 +26,30 @@ private:
 	unsigned int width;
 	unsigned int height;
 	std::vector<PixelType> data;
+	
+	void perform_action(std::function<void(PixelType&, vec2)> func, unsigned int start_x, unsigned int start_y, unsigned int x_count, unsigned int y_count)
+	{
+		for (unsigned int y = start_y;y < start_y + y_count;++y)
+			for(unsigned int x = start_x; x < start_x + x_count; ++x)
+				func(data[y*width + x], vec2{x,y});	//todo major fix this
+	}
+
+	std::vector<uivec4> divide_image(int num_parts)
+	{
+		std::vector<uivec4> parts(num_parts);
+		for (unsigned int i = 0; i < num_parts; ++i)
+		{
+
+		}
+	}
+
+	static void perform_action_const(std::function<void(const PixelType&)> func, const PixelType* start, const PixelType* end)
+	{
+		for (const PixelType* ptr = start; ptr <= end;++ptr)
+		{
+			func(*ptr);
+		}
+	}
 
 public:
 
@@ -217,6 +243,7 @@ public:
 		}
 
 		file.write((char*)_image_data, bmp_h.image_data_size);	//todo check if you need static cast
+		file.close();
 	}
 
 	__GeneralImage__(unsigned int width, unsigned int height) : width(width), height(height)
@@ -239,27 +266,83 @@ public:
 		return data[y * width + x];
 	}
 
-	void for_each_perform(std::function<void(PixelType&)> action)
+	inline PixelType& at(uivec2 coord)
 	{
-		for (auto curr_ptr = data.begin(); curr_ptr < data.end(); ++curr_ptr)
-			action(data);
+		assert(coord.x() < width && coord.y() < height);
+		return data[coord.y() * width + coord.x()];
+	}
+	inline const PixelType& at(uivec2 coord) const
+	{
+		assert(coord.x() < width && coord.y() < height);
+		return data[coord.y() * width + coord.x()];
 	}
 
-	void for_each_perform(std::function<void(const PixelType&)> action) const
+	inline PixelType& at(ivec2 coord)
 	{
-		for (auto curr_ptr = data.begin(); curr_ptr < data.end(); ++curr_ptr)
-			action(data);
+		assert(coord.x() < width && coord.y() < height);
+		return data[coord.y() * width + coord.x()];
+	}
+	inline const PixelType& at(ivec2 coord) const
+	{
+		assert(coord.x() < width && coord.y() < height);
+		return data[coord.y() * width + coord.x()];
+	}
+
+	void for_each_perform(std::function<void(PixelType&,vec2)> action, int num_threads = 1)
+	{
+
+		//todo complete implementation
+		assert(num_threads == 1, "Multithreading is not ready yet");
+		assert(num_threads > 0, "Image::for_each_perform called with num_threads < 1");
+		std::vector<std::thread> threads;
+		threads.reserve(num_threads - 1);
+		for (int i = 0; i < num_threads - 1; ++i)
+		{
+//			threads.push_back(std::thread(perform_action,action,
+//				data.data() + static_cast<int>(data.size() * (static_cast<double>(i) / num_threads)),
+//				data.data() + static_cast<int>(data.size() * (static_cast<double>((i + 1)) / num_threads))));
+		}
+		auto w_reciprocal = 1.0 / (double)width;
+		auto h_reciprocal = 1.0 / (double)height;
+		for (unsigned int y = 0; y < height; ++y)
+		{
+			for (unsigned int x = 0; x < width; ++x)
+			{
+				action(at(x, y), vec2(x*w_reciprocal,y*h_reciprocal));
+			}
+		}
+		for (int i = 0; i < threads.size(); ++i)
+			threads[i].join();
+	}
+
+	void for_each_perform(std::function<void(const PixelType&)> action, int num_threads = 1) const
+	{
+		assert(num_threads == 1, "Multithreading is not ready yet");
+		assert(num_threads > 0, "Image::for_each_perform called with num_threads < 1");
+		std::vector<std::thread> threads;
+		threads.reserve(num_threads - 1);
+		for (int i = 0; i < num_threads - 1; ++i)
+		{
+			threads.push_back(std::thread(perform_action_const, action,
+				data.data() + static_cast<int>(data.size() * (static_cast<double>(i) / num_threads)),
+				data.data() + static_cast<int>(data.size() * (static_cast<double>((i + 1)) / num_threads))));
+		}
+		for (auto i = static_cast<size_t>(data.size() * static_cast<double>((num_threads - 1)) / num_threads); i < data.size()-1; ++i)
+			action( ((const PixelType*)data.data())[i] );
+		for (int i = 0; i < threads.size(); ++i)
+			threads[i].join();
 	}
 
 };
 
 typedef double basic_image_type;
 
-class Color : public __Vector3__<double>
+class Color : public vec3
 {
 private:
 
 public:
+	using vec3::__GeneralVector__;
 	void operator<<(unsigned char(&rgb)[3]) const
 	{
 		//rgb[0] = static_cast<unsigned char>(255.999 * this->x());
@@ -270,6 +353,7 @@ public:
 		//I much prefer the above (commented) version
 		//replace the below version later
 
+
 		for (unsigned char i = 0; i < 3; ++i)
 		{
 			if (data[i] > 1.0)
@@ -277,7 +361,7 @@ public:
 			else if (data[i] < 0.0)
 				rgb[i] = 0;
 			else
-				rgb[i] = static_cast<unsigned char>(255.999 * data[i]);
+				rgb[i] = static_cast<unsigned char>(255 * data[i]);
 		}
 
 	}
