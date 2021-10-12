@@ -11,7 +11,7 @@
 #include <assert.h>
 
 #include "Vec.h"
-
+#include "Color.h"
 
 
 template<typename PixelType>
@@ -300,10 +300,10 @@ public:
 		{
 //			threads.push_back(std::thread(perform_action,action,
 //				data.data() + static_cast<int>(data.size() * (static_cast<double>(i) / num_threads)),
-//				data.data() + static_cast<int>(data.size() * (static_cast<double>((i + 1)) / num_threads))));
+//				data.data() + static_cast<int>(data.size() * (static_cast<double>((i + 1)) / num_threads))));	
 		}
-		auto w_reciprocal = 1.0 / (double)width;
-		auto h_reciprocal = 1.0 / (double)height;
+		auto w_reciprocal = 1.0 / (double)(width-1);
+		auto h_reciprocal = 1.0 / (double)(height-1);
 		for (unsigned int y = 0; y < height; ++y)
 		{
 			for (unsigned int x = 0; x < width; ++x)
@@ -336,41 +336,5 @@ public:
 };
 
 typedef double basic_image_type;
-
-class Color : public vec3
-{
-private:
-
-public:
-	using vec3::__GeneralVector__;
-	void operator<<(unsigned char(&rgb)[3]) const
-	{
-		//rgb[0] = static_cast<unsigned char>(255.999 * this->x());
-		//rgb[1] = static_cast<unsigned char>(255.999 * y());
-		//rgb[1] = static_cast<unsigned char>(255.999 * z());
-
-		//TODO
-		//I much prefer the above (commented) version
-		//replace the below version later
-
-
-		for (unsigned char i = 0; i < 3; ++i)
-		{
-			if (data[i] > 1.0)
-				rgb[i] = 255;
-			else if (data[i] < 0.0)
-				rgb[i] = 0;
-			else
-				rgb[i] = static_cast<unsigned char>(255 * data[i]);
-		}
-
-	}
-	void operator>>(const unsigned char(&rgb)[3])
-	{
-		x() = static_cast<double>(rgb[0])/255.0;
-		y() = static_cast<double>(rgb[1])/255.0;
-		z() = static_cast<double>(rgb[2])/255.0;
-	}
-};
 
 typedef __GeneralImage__<Color> Image;

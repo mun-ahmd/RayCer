@@ -30,6 +30,7 @@ public:
 	template<unsigned char index, typename T,typename... Ts>
 	void _init_set_(T arg,Ts... args)
 	{
+		static_assert(std::is_arithmetic<T>::value, "Only Numeric Templates accepted by __GeneralVector__");
 		data[index] = arg;
 		_init_set_<index + 1>(args...);
 	}
@@ -44,16 +45,17 @@ public:
 		}
 	}
 
-	template<typename T, typename... Ts>
-	__GeneralVector__(T arg, Ts... args)
+	template<typename... Ts>
+	__GeneralVector__(numeric_type arg, Ts... args)
 	{
-		static_assert(are_arithmetic<numeric_type, T, Ts...>::value);
+		//static_assert(are_arithmetic<numeric_type, T, Ts...>::value);
 		//static_assert(sizeof...(Ts) == num_elements - 1);
 		_init_set_<0>(arg, args...);
 	}
 
+
 	inline __GeneralVector__<numeric_type, num_elements> operator+(
-		__GeneralVector__<numeric_type, num_elements> const& v)
+		__GeneralVector__<numeric_type, num_elements> const& v) const
 	{
 		__GeneralVector__<numeric_type, num_elements> new_vec;
 		for (unsigned char i = 0; i < num_elements; ++i)
@@ -68,7 +70,7 @@ public:
 	}
 
 	inline __GeneralVector__<numeric_type, num_elements> operator -(
-		__GeneralVector__<numeric_type, num_elements> const& v)
+		__GeneralVector__<numeric_type, num_elements> const& v) const
 	{
 		__GeneralVector__<numeric_type, num_elements> new_vec;
 		for (unsigned char i = 0; i < num_elements; ++i)
@@ -82,7 +84,7 @@ public:
 			data[i] -= other.data[i];
 	}
 
-	inline numeric_type operator *(__GeneralVector__<numeric_type, num_elements> const& v)
+	inline numeric_type operator *(__GeneralVector__<numeric_type, num_elements> const& v) const
 	{
 		numeric_type dot_product = 0;
 		for (unsigned char i = 0; i < num_elements; ++i)
@@ -90,15 +92,15 @@ public:
 		return dot_product;
 	}
 
-	inline __GeneralVector__<numeric_type,3> operator*(numeric_type t)
+	inline __GeneralVector__<numeric_type,num_elements> operator*(numeric_type t) const
 	{
-		__GeneralVector__<numeric_type, 3> prod = 0;
+		__GeneralVector__<numeric_type, num_elements> prod = 0;
 		for (unsigned char i = 0; i < num_elements; ++i)
 			prod.data[i] = data[i] * t;
 		return prod;
 	}
 
-	inline numeric_type operator/(numeric_type t)
+	inline __GeneralVector__<numeric_type, num_elements> operator/(numeric_type t) const
 	{
 		return (1 / t) * this;
 	}
@@ -119,7 +121,7 @@ public:
 		return y;
 	}
 
-	__GeneralVector__<numeric_type, num_elements> normalized()
+	__GeneralVector__<numeric_type, num_elements> normalized() const
 	{
 		double inv_sqrt = __GeneralVector__::fast_inv_sqrt(magnitude2());
 		//todo not great way to initalize r_vec
@@ -131,13 +133,13 @@ public:
 
 	static inline numeric_type dot(const __GeneralVector__<numeric_type, num_elements>& u, const __GeneralVector__<numeric_type, num_elements>& v)
 	{
-		numeric_type dot_product;
+		numeric_type dot_product = 0;
 		for (unsigned char i = 0; i < num_elements; ++i)
 			dot_product += u.data[i] * v.data[i];
 		return dot_product;
 	}
 
-	__GeneralVector__<numeric_type,3> cross(__GeneralVector__<numeric_type, 3> other)
+	__GeneralVector__<numeric_type,3> cross(__GeneralVector__<numeric_type, 3> other) const
 	{
 		static_assert(num_elements >= 3);
 		return __GeneralVector__<numeric_type, 3>({
@@ -147,7 +149,7 @@ public:
 			});
 	}
 
-	numeric_type magnitude2()
+	numeric_type magnitude2() const
 	{
 		numeric_type mag = 0;
 		for (unsigned char i = 0; i < num_elements; ++i)
@@ -155,7 +157,7 @@ public:
 		return mag;
 	}
 
-	numeric_type magnitude()
+	numeric_type magnitude() const
 	{
 		return std::sqrt(magnitude2());
 	}
