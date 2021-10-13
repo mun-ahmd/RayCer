@@ -8,6 +8,7 @@ private:
 
 public:
 	using vec3::__GeneralVector__;
+	Color(vec3 vecIN) : vec3(vecIN){}
 	void operator<<(unsigned char(&rgb)[3]) const
 	{
 		//rgb[0] = static_cast<unsigned char>(255.999 * this->x());
