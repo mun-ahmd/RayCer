@@ -105,6 +105,27 @@ public:
 		return (1 / t) * this;
 	}
 
+	inline bool operator ==(__GeneralVector__<numeric_type, num_elements> const& other)
+	{
+		for (unsigned char i = 0; i < num_elements; ++i)
+		{
+			if (data[i] != other[i])
+				return false;
+		}
+		return true;
+	}
+
+	inline bool operator !=(__GeneralVector__<numeric_type, num_elements> const& other)
+	{
+		for (unsigned char i = 0; i < num_elements; ++i)
+		{
+			if (data[i] != other[i])
+				return true;
+		}
+		return false;
+	}
+
+
 
 	static double fast_inv_sqrt(double n) {
 
@@ -168,7 +189,7 @@ public:
 		return data[index];
 	}
 
-	numeric_type& operator[](unsigned char index) const
+	const numeric_type& operator[](unsigned char index) const
 	{
 		assert(num_elements > index);
 		return data[index];
