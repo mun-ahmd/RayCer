@@ -8,3 +8,7 @@ test.ppm
 .vs/*
 x64/*
 Resources_Outputs/*
+
+# Added by cargo
+
+/target
