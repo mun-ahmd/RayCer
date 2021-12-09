@@ -1,5 +1,5 @@
 [package]
-name = "RayCer"
+name = "ray_cer"
 version = "0.1.0"
 authors = ["mun-ahmd <muneeb0ahmed3@gmail.com>"]
 edition = "2018"
@@ -7,3 +7,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+glm = "0.2.3"
+image = "0.23.14"
+itertools = "0.10.1"
+num_cpus = "1.13.0"
+crossbeam = "0.8.1"

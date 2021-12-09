@@ -9,6 +9,7 @@ test.ppm
 x64/*
 Resources_Outputs/*
 
+Resource/*
 # Added by cargo
 
 /target
