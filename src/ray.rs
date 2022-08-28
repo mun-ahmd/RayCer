@@ -13,6 +13,10 @@ impl Ray {
             dir: ray_dir,
         }
     }
+    
+    pub fn at(self, t_factor : f32) -> Vec3{
+        self.origin + self.dir * t_factor
+    }
 }
 
 impl Default for Ray {

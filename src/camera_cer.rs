@@ -44,9 +44,10 @@ impl Camera for SimpleCamera {
         let (viewport_w, viewport_h) = (2.0 * self.aspect_ratio as f32, 2. as f32);
         let lower_left_corner =
             self.pos - Vec3::new(viewport_w / 2., viewport_h / 2., self.focal_len as f32);
+        let dirvec = -glm::normalize(lower_left_corner + Vec3::new(uv.x * viewport_w, uv.y * viewport_h, 0.));
         ray::Ray::new(
             self.pos,
-            lower_left_corner + Vec3::new(uv.x * viewport_w, uv.y * viewport_h, 0.),
+            -glm::normalize(lower_left_corner + Vec3::new(uv.x * viewport_w, uv.y * viewport_h, 0.))
         )
     }
 }

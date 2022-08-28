@@ -51,6 +51,65 @@ impl<T> PixRGB<T> {
     }
 }
 
+impl<T: std::ops::Add<Output = T> + std::ops::Mul<Output = T>> PixRGB<T>{
+    pub fn dot(self, other : PixRGB<T>) -> T{
+        self.r*other.r  + self.g*other.g + self.b*other.b
+    }
+}
+
+impl PixRGB<f32>{
+}
+pub fn pixel<T>(r: T, g: T, b: T) -> PixRGB<T> {
+    PixRGB::new(r, g, b)
+}
+pub fn pixel_v<T: glm::Primitive>(vec: glm::Vector3<T>) -> PixRGB<T> {
+    PixRGB::new(vec.x, vec.y, vec.z)
+}
+
+impl std::ops::Add for PixRGB<f32> {
+    type Output = PixRGB<f32>;
+    fn add(self, rhs: Self) -> Self::Output {
+        PixRGB::new(self.r + rhs.r, self.g + rhs.g, self.b + rhs.b)
+    }
+}
+
+impl std::ops::Sub for PixRGB<f32> {
+    type Output = PixRGB<f32>;
+    fn sub(self, rhs: Self) -> Self::Output {
+        PixRGB::new(self.r - rhs.r, self.g - rhs.g, self.b - rhs.b)
+    }
+}
+
+impl std::ops::Mul<f32> for PixRGB<f32> {
+    type Output = PixRGB<f32>;
+    fn mul(self, rhs: f32) -> Self::Output {
+        PixRGB::new(self.r * rhs, self.g * rhs, self.b * rhs)
+    }
+}
+
+// impl std::ops::MulAssign<f32> for PixRGB<f32> {
+//     fn mul_assign(&mut self, rhs: f32){
+//         self.r *= rhs;
+//         self.g *= rhs;
+//         self.b *= rhs;
+//     }
+// }
+
+impl std::ops::Mul for PixRGB<f32> {
+    type Output = PixRGB<f32>;
+    fn mul(self, rhs: Self) -> Self::Output {
+        PixRGB::new(self.r * rhs.r, self.g * rhs.g, self.b * rhs.b)
+    }
+}
+
+impl std::ops::Div<f32> for PixRGB<f32> {
+    type Output = PixRGB<f32>;
+    fn div(self, rhs: f32) -> Self::Output {
+        let reci = 1. / rhs;
+        PixRGB::new(self.r * reci, self.g * reci, self.b * reci)
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct ImageCer {
     image_data: Vec<PixRGB<f32>>,
@@ -153,7 +212,6 @@ impl ImageWorks for ImageCer {
         action: fn(&mut Self::PixelType, glm::Vec2, &Targs),
         action_arg: Targs,
     ) {
-        let actiona = Arc::new(action);
         let num_threads = num_cpus::get();
         println!("Using {} threads!", num_threads);
 
@@ -166,7 +224,7 @@ impl ImageWorks for ImageCer {
         let mut thread_index = 0;
 
         cb::scope(|scope| {
-            let woww = &action_arg;
+            let action_arg_ref = &action_arg;
             for image_chunk in self
                 .image_data
                 .chunks_mut(height_per_thread * self.width as usize)
@@ -180,7 +238,8 @@ impl ImageWorks for ImageCer {
                                 glm::Vec2::new(
                                     x as f32 / (img_width - 1) as f32,
                                     y as f32 / (img_height - 1) as f32,
-                                ),woww
+                                ),
+                                action_arg_ref,
                             );
                             index_within_chunk += 1;
                         }
@@ -196,7 +255,8 @@ impl ImageWorks for ImageCer {
                                     glm::Vec2::new(
                                         x as f32 / (img_width - 1) as f32,
                                         y as f32 / (img_height - 1) as f32,
-                                    ),woww
+                                    ),
+                                    action_arg_ref,
                                 );
                                 index_within_chunk += 1;
                             }

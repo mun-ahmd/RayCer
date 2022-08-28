@@ -8,7 +8,7 @@ test.ppm
 .vs/*
 x64/*
 Resources_Outputs/*
-
+.vscode/*
 Deprecated/*
 Resource/*
 # Added by cargo
